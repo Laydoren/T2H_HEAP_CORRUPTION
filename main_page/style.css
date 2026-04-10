@@ -1,0 +1,368 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #0a0a0a;
+    margin: 0;
+    padding: 32px 24px;
+    color: #ecedee;
+}
+
+/* контейнер с мягкими углами */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    background: transparent;
+}
+
+.main-table {
+    flex: 1;
+    min-width: 280px;
+}
+
+.summary {
+    width: 340px;
+    background: #111112;
+    border-radius: 28px;
+    padding: 20px 24px;
+    border: 1px solid #252527;
+    backdrop-filter: blur(2px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+    height: fit-content;
+    position: sticky;
+    top: 24px;
+}
+
+/* все карточки, формы, таблицы — скруглённые */
+form, .employee-details, .alert, .modal-content, .shift-item, table, button, select, input {
+    border-radius: 20px !important;
+}
+
+h1 {
+    font-size: 1.9rem;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, #ffffff 0%, #b0b0b0 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-bottom: 24px;
+}
+
+h2 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 18px;
+    color: #f0f0f0;
+    border-left: 3px solid #3b82f6;
+    padding-left: 12px;
+}
+
+h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* форма выбора и добавления */
+form {
+    background: #121214;
+    border: 1px solid #2c2c2e;
+    padding: 22px 26px;
+    margin-bottom: 28px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+label {
+    display: inline-block;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #bcbcbc;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+}
+
+select, button {
+    background: #1e1e20;
+    border: 1px solid #353538;
+    padding: 10px 14px;
+    color: #f5f5f5;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+}
+
+    select:focus, button:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+    }
+
+    select:hover, button:hover {
+        background: #2a2a2e;
+        border-color: #4a4a50;
+    }
+
+button {
+    font-weight: 500;
+    background: #2563eb;
+    border: none;
+    padding: 10px 20px;
+    color: white;
+}
+
+    button:hover {
+        background: #3b82f6;
+        transform: translateY(-1px);
+    }
+
+.back-btn {
+    background: #2c2c30;
+    color: #e2e2e2;
+    margin-bottom: 16px;
+}
+
+    .back-btn:hover {
+        background: #3a3a40;
+    }
+
+/* таблицы — минималистичные, тёмные */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #101012;
+    border: 1px solid #262629;
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+caption {
+    text-align: left;
+    font-size: 1.3rem;
+    font-weight: 500;
+    background: #0c0c0e;
+    padding: 12px 16px;
+    caption-side: top;
+    color: #dddddd;
+    border-radius: 20px 20px 0 0;
+}
+
+th {
+    background: #18181b;
+    padding: 14px 12px;
+    font-weight: 600;
+    color: #dddddd;
+    border-bottom: 1px solid #2d2d30;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+}
+
+td {
+    padding: 12px 12px;
+    border-bottom: 1px solid #202023;
+    color: #cfcfcf;
+    font-size: 0.85rem;
+    vertical-align: top;
+}
+
+tr:hover td {
+    background: #17171a;
+}
+
+/* кнопки действий */
+.edit-btn, .delete-btn, .edit-shift-btn, .delete-shift-btn {
+    background: #26262b;
+    border: none;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 40px !important;
+    font-weight: 500;
+    transition: 0.15s;
+}
+
+.edit-btn {
+    color: #7dd3fc;
+    background: #1e293b;
+}
+
+    .edit-btn:hover {
+        background: #2d3a5e;
+        color: white;
+    }
+
+.delete-btn {
+    color: #f9acac;
+    background: #2c1e1e;
+}
+
+    .delete-btn:hover {
+        background: #4a2525;
+        color: #ffb3b3;
+    }
+
+.edit-shift-btn {
+    background: #1e2a3a;
+    color: #90cdf4;
+}
+
+.delete-shift-btn {
+    background: #331f1f;
+    color: #f9b5b5;
+}
+
+/* детали сотрудника */
+.employee-details {
+    background: #0f0f12;
+    border: 1px solid #2a2a2e;
+    padding: 20px;
+    margin-top: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+
+.shift-item {
+    background: #151518;
+    border: 1px solid #2a2a2e;
+    padding: 12px 16px;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.1s;
+}
+
+.shift-info {
+    font-size: 0.9rem;
+    color: #e2e2e2;
+}
+
+/* предупреждения и алерты */
+.alert {
+    background: #2a2416;
+    border-left: 4px solid #f59e0b;
+    color: #ffeaaf;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 16px;
+    font-size: 0.85rem;
+}
+
+.warning {
+    color: #fbbf24;
+}
+
+.error {
+    color: #f87171;
+    background: #2c1a1a;
+    padding: 12px;
+    border-radius: 24px;
+    margin-top: 16px;
+    text-align: center;
+}
+
+/* модальное окно */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: #121215;
+    margin: 12% auto;
+    padding: 24px 28px;
+    border: 1px solid #34343a;
+    width: 380px;
+    border-radius: 32px !important;
+    box-shadow: 0 25px 40px rgba(0,0,0,0.6);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+    .close:hover {
+        color: white;
+    }
+
+.modal-buttons {
+    margin-top: 28px;
+    text-align: right;
+}
+
+.confirm-btn {
+    background: #dc2626;
+    margin-left: 12px;
+}
+
+    .confirm-btn:hover {
+        background: #b91c1c;
+    }
+
+.cancel-btn {
+    background: #2c2c30;
+    color: #ddd;
+}
+
+/* мелкие улучшения */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.consecutive-shifts {
+    font-size: 0.8rem;
+    color: #a0a0a0;
+}
+
+#summaryWeekdays strong, #summaryWeekends strong {
+    color: #f0f0f0;
+}
+
+small {
+    color: #7e7e82;
+}
+
+select:disabled, button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* адаптив */
+@media (max-width: 860px) {
+    body {
+        padding: 20px 16px;
+    }
+
+    .container {
+        flex-direction: column;
+    }
+
+    .summary {
+        width: 100%;
+        position: static;
+    }
+
+    th, td {
+        font-size: 0.75rem;
+        padding: 8px 6px;
+    }
+}
