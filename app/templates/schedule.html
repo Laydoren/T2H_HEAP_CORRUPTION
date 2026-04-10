@@ -1,0 +1,92 @@
+{% extends "app_shell.html" %}
+{% set active = 'schedule' %}
+{% block title %}Мой график — HR Schedule HUB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Мой график</h1>
+    <p class="page-sub">Еженедельный шаблон повторяется автоматически</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn-outline" onclick="openRequestModal()">+ Запрос на изменение</button>
+    <button class="btn-primary" onclick="openTemplateModal()">Редактировать шаблон</button>
+  </div>
+</div>
+
+<div id="pending-notice" class="notice-bar notice-warn hidden">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  Есть дни на рассмотрении у руководителя
+</div>
+
+<div class="week-nav">
+  <button class="icon-btn" id="prev-week">&#8592;</button>
+  <span class="week-label" id="week-label">—</span>
+  <button class="icon-btn" id="next-week">&#8594;</button>
+</div>
+
+<div class="sched-grid" id="sched-grid">
+  <p class="muted-text">Загрузка…</p>
+</div>
+
+<div class="section-block" id="requests">
+  <div class="section-header">
+    <h2 class="section-title">Запросы на изменение</h2>
+    <button class="btn-ghost btn-sm" onclick="loadMyRequests()">Обновить</button>
+  </div>
+  <div id="requests-list"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+<!-- Modal: template editor -->
+<div class="modal-overlay hidden" id="template-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Редактировать шаблон</h3>
+      <button class="modal-close" onclick="closeModal('template-modal')">&#x2715;</button>
+    </div>
+    <p class="modal-hint">Включите нужные дни и установите часы. Шаблон повторяется каждую неделю и уходит на одобрение руководителю.</p>
+    <div id="template-rows"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('template-modal')">Отмена</button>
+      <button class="btn-primary" onclick="saveTemplate()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: change request -->
+<div class="modal-overlay hidden" id="request-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Запрос на изменение</h3>
+      <button class="modal-close" onclick="closeModal('request-modal')">&#x2715;</button>
+    </div>
+    <div id="req-error" class="alert alert-error hidden"></div>
+    <div class="form-group">
+      <label>Дата</label>
+      <input type="date" id="req-date"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Начало</label>
+        <input type="time" id="req-start" value="09:00"/>
+      </div>
+      <div class="form-group">
+        <label>Конец</label>
+        <input type="time" id="req-end" value="18:00"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Причина <span class="req-star">*</span></label>
+      <textarea id="req-reason" rows="3" placeholder="Укажите причину изменения…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('request-modal')">Отмена</button>
+      <button class="btn-primary" onclick="submitRequest()">Отправить</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
+{% endblock %}

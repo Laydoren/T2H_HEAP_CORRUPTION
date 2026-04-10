@@ -11,9 +11,11 @@ def create_app():
     from app.routes.auth_routes     import auth
     from app.routes.schedule_routes import schedule
     from app.routes.manager_routes  import manager
+    from app.routes.admin_routes    import admin_bp
 
     app.register_blueprint(auth)
     app.register_blueprint(schedule)
     app.register_blueprint(manager)
+    app.register_blueprint(admin_bp)
 
     return app
