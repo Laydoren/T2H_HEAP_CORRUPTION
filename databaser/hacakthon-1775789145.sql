@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `Employees` (
 	`last_name` TEXT NOT NULL,
 	`patronymic` TEXT NOT NULL,
 	`role` TEXT NOT NULL,
+	'group' TEXT NOT NULL,
 FOREIGN KEY(`login`) REFERENCES `Users`(`login`)
 );
 CREATE TABLE IF NOT EXISTS `Schedule` (
