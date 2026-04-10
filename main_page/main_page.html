@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Индивидуальный график сотрудников</title>
+    <link href="style.css"
+          rel="stylesheet"
+          type="text/css">
+</head>
+<body>
+    <div class="container">
+        <div class="main-table">
+            <h1>Индивидуальный график сотрудников</h1>
+            
+            <!-- Форма выбора сотрудника -->
+            <form id="selectionForm">
+                <label for="alliance">Выберите альянс:</label>
+                <select id="alliance" required onchange="updateGroups()">
+                    <option value="">-- Выберите альянс --</option>
+                    <option value="Пупкина">Альянс Пупкина</option>
+                    <option value="Тумбочкина">Альянс Тумбочкина</option>
+                    <option value="Петровича">Альянс Петровича</option>
+                    <option value="Сидоровича">Альянс Сидоровича</option>
+                </select><br><br>
+                
+                <label for="group">Выберите группу:</label>
+                <select id="group" required onchange="updateEmployees()" disabled>
+                    <option value="">-- Сначала выберите альянс --</option>
+                </select><br><br>
+                
+                <label for="employee">Выберите сотрудника:</label>
+                <select id="employee" required disabled>
+                    <option value="">-- Сначала выберите группу --</option>
+                </select><br><br>
+            </form>
+            
+            <!-- Форма добавления графика -->
+            <form id="scheduleForm" style="display: none;">
+                <label for="date">Выберите дату:</label>
+                <select id="date" required></select><br><br>
+                
+                <div id="consecutiveWarning" class="alert" style="display: none;"></div>
+                
+                <label for="startTime">Начало смены:</label>
+                <select id="startTime" required onchange="toggleEndTime()"></select><br><br>
+                
+                <label for="endTime">Конец смены:</label>
+                <select id="endTime" required disabled></select><br><br>
+                
+                <button type="submit">Добавить график</button>
+            </form>
+            
+            <!-- Детали сотрудника (появляются при клике) -->
+            <div id="employeeDetails" class="employee-details" style="display: none;">
+                <button class="back-btn" onclick="hideEmployeeDetails()">← Назад к списку</button>
+                <h3 id="detailsEmployeeName"></h3>
+                <div id="detailsAllianceGroup"></div>
+                <div id="shiftsList" class="shift-list"></div>
+            </div>
+            
+            <h2>Список графиков</h2>
+            <div id="employeesTable"></div>
+        </div>
+        
+        <div class="summary">
+            <h2>Общий свод</h2>
+            <div id="summaryWeekdays"></div>
+            <div id="summaryWeekends" class="warning"></div>
+        </div>
+        
+        <div id="errorMessage" class="error"></div>
+    </div>
+    
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+            <h3>Подтверждение удаления</h3>
+            <p id="deleteModalMessage">Вы уверены, что хотите удалить?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteModal()">Отмена</button>
+                <button class="confirm-btn" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const alliancesData = {
+            'Пупкина': [
+                { name: 'Группа Сизых', employees: ['Сизый Александр Петрович', 'Сизый Мария Ивановна'] },
+                { name: 'Группа Василькова', employees: ['Васильков Иван Сергеевич', 'Василькова Ольга Васильевна'] },
+                { name: 'Группа Петькова', employees: ['Петьков Дмитрий Алексеевич', 'Петькова Елена Дмитриевна'] },
+                { name: 'Группа Ивановых', employees: ['Ивановых Николай Петрович', 'Ивановых Анна Николаевна'] }
+            ],
+            'Тумбочкина': [
+                { name: 'Группа Кузнецовых', employees: ['Кузнецов Виктор Михайлович', 'Кузнецова Светлана Викторовна'] },
+                { name: 'Группа Смирновых', employees: ['Смирновых Алексей Иванович', 'Смирновых Наталья Алексеевна'] },
+                { name: 'Группа Поповых', employees: ['Поповых Евгений Сергеевич', 'Поповых Ирина Евгеньевна'] },
+                { name: 'Группа Волковых', employees: ['Волковых Павел Дмитриевич', 'Волкова Екатерина Павловна'] }
+            ],
+            'Петровича': [
+                { name: 'Группа Морозовых', employees: ['Морозовых Андрей Владимирович', 'Морозова Ольга Андреевна'] },
+                { name: 'Группа Лебедевых', employees: ['Лебедевых Сергей Николаевич', 'Лебедева Мария Сергеевна'] },
+                { name: 'Группа Козловых', employees: ['Козловых Дмитрий Юрьевич', 'Козлова Анна Дмитриевна'] },
+                { name: 'Группа Соболевых', employees: ['Соболевых Иван Петрович', 'Соболева Елена Ивановна'] }
+            ],
+            'Сидоровича': [
+                { name: 'Группа Никифоровых', employees: ['Никифоровых Роман Александрович', 'Никифорова Татьяна Романовна'] },
+                { name: 'Группа Поляковых', employees: ['Поляковых Михаил Васильевич', 'Полякова Ирина Михайловна'] },
+                { name: 'Группа Савельевых', employees: ['Савельевых Алексей Константинович', 'Савельева Надежда Алексеевна'] },
+                { name: 'Группа Тарасовых', employees: ['Тарасовых Владимир Сергеевич', 'Тарасова Ольга Владимировна'] }
+            ]
+        };
+        
+        // Переменные для модального окна
+        let currentDeleteCallback = null;
+        
+        // Инициализация данных при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            generateDateOptions();
+            generateTimeOptions('startTime');
+            generateTimeOptions('endTime');
+            
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            updateTable(employees);
+            calculateSummary(employees);
+        });
+        
+        function updateGroups() {
+            const alliance = document.getElementById('alliance').value;
+            const groupSelect = document.getElementById('group');
+            const employeeSelect = document.getElementById('employee');
+            const scheduleForm = document.getElementById('scheduleForm');
+            
+            groupSelect.innerHTML = '<option value="">-- Выберите группу --</option>';
+            employeeSelect.innerHTML = '<option value="">-- Сначала выберите группу --</option>';
+            employeeSelect.disabled = true;
+            
+            if (alliance) {
+                alliancesData[alliance].forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.name;
+                    option.textContent = group.name;
+                    groupSelect.appendChild(option);
+                });
+                groupSelect.disabled = false;
+                scheduleForm.style.display = 'block';
+            } else {
+                groupSelect.disabled = true;
+                scheduleForm.style.display = 'none';
+            }
+        }
+        
+        function updateEmployees() {
+            const alliance = document.getElementById('alliance').value;
+            const group = document.getElementById('group').value;
+            const employeeSelect = document.getElementById('employee');
+            
+            employeeSelect.innerHTML = '<option value="">-- Выберите сотрудника --</option>';
+            
+            if (alliance && group) {
+                const selectedGroup = alliancesData[alliance].find(g => g.name === group);
+                if (selectedGroup) {
+                    selectedGroup.employees.forEach(emp => {
+                        const option = document.createElement('option');
+                        option.value = emp;
+                        option.textContent = emp;
+                        employeeSelect.appendChild(option);
+                    });
+                    employeeSelect.disabled = false;
+                }
+            } else {
+                employeeSelect.disabled = true;
+            }
+        }
+        
+        function generateDateOptions() {
+            const dateSelect = document.getElementById('date');
+            const today = new Date();
+            
+            for (let i = 0; i < 30; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}`;
+                
+                const weekdays = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+                const weekday = weekdays[date.getDay()];
+                
+                const option = document.createElement('option');
+                option.value = formattedDate;
+                option.textContent = `${formattedDate} (${weekday})`;
+                dateSelect.appendChild(option);
+            }
+        }
+        
+        function generateTimeOptions(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">-- Выберите время --</option>';
+            
+            if (selectId === 'startTime') {
+                const dayOffOption = document.createElement('option');
+                dayOffOption.value = 'Выходной';
+                dayOffOption.textContent = 'Выходной';
+                select.appendChild(dayOffOption);
+            }
+            
+            // Генерируем время с шагом 15 минут
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute of [0, 15, 30, 45]) {
+                    if (selectId === 'startTime') {
+                        // Для startTime начинаем с 6:30
+                        if (hour < 6 || (hour === 6 && minute < 30)) {
+                            continue;
+                        }
+                    }
+                    
+                    const timeValue = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = timeValue;
+                    option.textContent = timeValue;
+                    select.appendChild(option);
+                }
+            }
+        }
+        
+        function checkConsecutiveShifts(employee, newDate) {
+            if (!employee) return { canAdd: true, count: 0, dates: [] };
+            
+            const sortedShifts = [...employee.shifts].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            let maxConsecutive = 0;
+            let currentConsecutive = 0;
+            let lastDate = null;
+            let consecutiveDates = [];
+            
+            const allDates = [...sortedShifts.map(s => s.date), newDate].sort();
+            
+            for (let i = 0; i < allDates.length; i++) {
+                const currentDate = new Date(allDates[i]);
+                
+                if (lastDate) {
+                    const diffDays = Math.round((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays === 1) {
+                        currentConsecutive++;
+                        consecutiveDates.push(allDates[i]);
+                    } else {
+                        currentConsecutive = 1;
+                        consecutiveDates = [allDates[i]];
+                    }
+                } else {
+                    currentConsecutive = 1;
+                    consecutiveDates = [allDates[i]];
+                }
+                
+                maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+                lastDate = currentDate;
+            }
+            
+            return {
+                canAdd: maxConsecutive <= 6,
+                count: maxConsecutive,
+                dates: consecutiveDates
+            };
+        }
+        
+        function toggleEndTime() {
+            const startTime = document.getElementById('startTime').value;
+            const endTimeSelect = document.getElementById('endTime');
+            
+            if (startTime === 'Выходной') {
+                endTimeSelect.disabled = true;
+                endTimeSelect.value = '';
+                endTimeSelect.innerHTML = '<option value="">-- Выберите время --</option>';
+            } else if (startTime) {
+                endTimeSelect.disabled = false;
+                endTimeSelect.innerHTML = '<option value="">-- Выберите время --</option>';
+                
+                const [startHour, startMinute] = startTime.split(':').map(Number);
+                const startTotalMinutes = startHour * 60 + startMinute;
+                
+                // Генерируем время окончания с шагом 15 минут
+                for (let hour = 0; hour < 25; hour++) {
+                    for (let minute of [0, 15, 30, 45]) {
+                        if (hour === 24 && minute > 0) continue;
+                        
+                        let endHour = hour;
+                        let displayHour = hour;
+                        let nextDay = false;
+                        
+                        if (hour === 24) {
+                            displayHour = 0;
+                            nextDay = true;
+                        }
+                        
+                        const endTotalMinutes = (hour === 24 ? 24*60 : hour * 60 + minute);
+                        
+                        let adjustedEndTotalMinutes = endTotalMinutes;
+                        if (hour < 6 && hour !== 24) {
+                            adjustedEndTotalMinutes += 24 * 60;
+                        }
+                        
+                        if (adjustedEndTotalMinutes <= startTotalMinutes) continue;
+                        
+                        const shiftDuration = adjustedEndTotalMinutes - startTotalMinutes;
+                        if (shiftDuration > 720) continue;
+                        
+                        if (hour > 2 && hour < 6 && hour !== 24) continue;
+                        if (hour === 2 && minute > 0) continue;
+                        
+                        const timeValue = `${String(endHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                        const timeLabel = nextDay ? `${String(displayHour).padStart(2, '0')}:${String(minute).padStart(2, '0')} (след. день)` : `${String(displayHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                        
+                        const option = document.createElement('option');
+                        option.value = timeValue;
+                        option.textContent = timeLabel;
+                        endTimeSelect.appendChild(option);
+                    }
+                }
+                
+                if (endTimeSelect.options.length === 1) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.disabled = true;
+                    option.textContent = 'Нет доступного времени окончания';
+                    endTimeSelect.appendChild(option);
+                }
+            }
+        }
+        
+        function updateConsecutiveWarning() {
+            const alliance = document.getElementById('alliance').value;
+            const group = document.getElementById('group').value;
+            const employeeName = document.getElementById('employee').value;
+            const selectedDate = document.getElementById('date').value;
+            const warningDiv = document.getElementById('consecutiveWarning');
+            
+            if (alliance && group && employeeName && selectedDate) {
+                const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+                const employee = employees.find(emp => 
+                    emp.name === employeeName && 
+                    emp.alliance === alliance && 
+                    emp.group === group
+                );
+                
+                if (employee) {
+                    const consecutiveCheck = checkConsecutiveShifts(employee, selectedDate);
+                    
+                    if (consecutiveCheck.count > 6) {
+                        warningDiv.style.display = 'block';
+                        warningDiv.textContent = `⚠️ Предупреждение: При добавлении этой смены будет ${consecutiveCheck.count} смен подряд! Максимально допустимо - 6 смен.`;
+                        warningDiv.className = 'alert warning';
+                    } else if (consecutiveCheck.count > 4) {
+                        warningDiv.style.display = 'block';
+                        warningDiv.textContent = `⚠️ Внимание: ${consecutiveCheck.count} смен подряд. Осталось ${6 - consecutiveCheck.count} до лимита.`;
+                        warningDiv.className = 'alert';
+                    } else {
+                        warningDiv.style.display = 'none';
+                    }
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        }
+        
+        function calculateEmployeeMetrics(emp) {
+            let weekdayShifts = 0;
+            let weekendShifts = 0;
+            let totalShifts = emp.shifts.length;
+            
+            emp.shifts.forEach(shift => {
+                const date = new Date(shift.date);
+                const day = date.getDay();
+                if (day >= 1 && day <= 5) weekdayShifts++;
+                else weekendShifts++;
+            });
+            
+            return {
+                weekdayPercentage: totalShifts > 0 ? ((weekdayShifts / totalShifts) * 100).toFixed(2) : '0.00',
+                weekendPercentage: totalShifts > 0 ? ((weekendShifts / totalShifts) * 100).toFixed(2) : '0.00'
+            };
+        }
+        
+        function calculateMaxConsecutiveShifts(employee) {
+            if (!employee || employee.shifts.length === 0) return 0;
+            
+            const sortedShifts = [...employee.shifts].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            let maxConsecutive = 1;
+            let currentConsecutive = 1;
+            let lastDate = new Date(sortedShifts[0].date);
+            
+            for (let i = 1; i < sortedShifts.length; i++) {
+                const currentDate = new Date(sortedShifts[i].date);
+                const diffDays = Math.round((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 1) {
+                    currentConsecutive++;
+                    maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+                } else {
+                    currentConsecutive = 1;
+                }
+                
+                lastDate = currentDate;
+            }
+            
+            return maxConsecutive;
+        }
+        
+        function calculateSummary(employees) {
+            console.log('Обновление свода...');
+            let totalShifts = 0;
+            
+            // Массивы для подсчета смен по дням недели
+            let shiftsByDay = [0, 0, 0, 0, 0, 0, 0]; // Пн, Вт, Ср, Чт, Пт, Сб, Вс
+            let before11Shifts = 0;
+            let after19Shifts = 0;
+            let longShifts = 0;
+            let employeesWithExcessConsecutive = 0;
+            
+            const dayNames = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+            
+            employees.forEach(emp => {
+                const maxConsecutive = calculateMaxConsecutiveShifts(emp);
+                if (maxConsecutive > 6) employeesWithExcessConsecutive++;
+                
+                emp.shifts.forEach(shift => {
+                    totalShifts++;
+                    const date = new Date(shift.date);
+                    const day = date.getDay(); // 0 - вс, 1 - пн, ..., 6 - сб
+                    
+                    // Преобразуем в наш формат (пн-вс)
+                    let dayIndex;
+                    if (day === 0) dayIndex = 6; // воскресенье
+                    else dayIndex = day - 1; // пн-пт = 0-4, сб = 5
+                    
+                    shiftsByDay[dayIndex]++;
+                    
+                    if (shift.startTime !== 'Выходной') {
+                        const startHour = parseInt(shift.startTime.split(':')[0]);
+                        if (startHour < 11) before11Shifts++;
+                        
+                        if (shift.endTime) {
+                            const [startHour, startMinute] = shift.startTime.split(':').map(Number);
+                            const [endHour, endMinute] = shift.endTime.split(':').map(Number);
+                            
+                            let startTotal = startHour * 60 + startMinute;
+                            let endTotal = endHour * 60 + endMinute;
+                            
+                            if (endHour < 6 && endHour !== 0) endTotal += 24 * 60;
+                            if (endHour === 0 && endMinute === 0 && startHour > 0) endTotal += 24 * 60;
+                            
+                            const duration = endTotal - startTotal;
+                            if (duration > 720) longShifts++;
+                        }
+                    }
+                    
+                    if (shift.endTime && shift.endTime !== '') {
+                        let endHour = parseInt(shift.endTime.split(':')[0]);
+                        if (shift.endTime === '00:00' && shift.startTime !== 'Выходной') {
+                            const startHour = parseInt(shift.startTime.split(':')[0]);
+                            if (startHour < 19) after19Shifts++;
+                        } else if (endHour > 19) {
+                            after19Shifts++;
+                        }
+                    }
+                });
+            });
+            
+            if (totalShifts > 0) {
+                // Формируем сводку по дням недели
+                let summaryHTML = '<strong>Распределение смен по дням недели (100%):</strong><br>';
+                
+                // Сортируем дни для вывода (пн-вс)
+                for (let i = 0; i < 7; i++) {
+                    const percentage = ((shiftsByDay[i] / totalShifts) * 100).toFixed(2);
+                    summaryHTML += `${dayNames[i]}: ${percentage}% (${shiftsByDay[i]} смен)<br>`;
+                }
+                
+                // Добавляем целевые значения для сравнения
+                summaryHTML += '<br><small>Целевое распределение (норма 5/2):<br>';
+                summaryHTML += 'Пн-Пт: ~71.43% (5/7), Сб-Вс: ~28.57% (2/7)</small><br><br>';
+                
+                // Сводка по времени начала/окончания
+                summaryHTML += '<strong>Смены по времени (100%):</strong><br>';
+                
+                const before11Percentage = ((before11Shifts / totalShifts) * 100).toFixed(2);
+                const after19Percentage = ((after19Shifts / totalShifts) * 100).toFixed(2);
+                const otherTimePercentage = (100 - before11Percentage - after19Percentage).toFixed(2);
+                
+                summaryHTML += `Начинаются до 11:00: ${before11Percentage}% (${before11Shifts} смен)<br>`;
+                summaryHTML += `Заканчиваются после 19:00: ${after19Percentage}% (${after19Shifts} смен)<br>`;
+                summaryHTML += `Остальное время: ${otherTimePercentage}%<br>`;
+                
+                document.getElementById('summaryWeekdays').innerHTML = summaryHTML;
+                
+                // Предупреждения
+                let warnings = [];
+                if (employeesWithExcessConsecutive > 0) {
+                    warnings.push(`⚠️ ${employeesWithExcessConsecutive} сотрудник(ов) имеют более 6 смен подряд!`);
+                }
+                if (longShifts > 0) {
+                    warnings.push(`⚠️ ${longShifts} смен(ы) длительностью более 12 часов!`);
+                }
+                
+                document.getElementById('summaryWeekends').innerHTML = warnings.join('<br>');
+                document.getElementById('summaryWeekends').className = warnings.length > 0 ? 'warning' : '';
+                
+            } else {
+                document.getElementById('summaryWeekdays').innerHTML = 'Нет данных для свода.';
+                document.getElementById('summaryWeekends').innerHTML = '';
+            }
+            console.log('Свод обновлён.');
+        }
+        
+        // Функции для модального окна
+        function showDeleteModal(message, callback) {
+            document.getElementById('deleteModalMessage').textContent = message;
+            currentDeleteCallback = callback;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            currentDeleteCallback = null;
+        }
+        
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (currentDeleteCallback) {
+                currentDeleteCallback();
+            }
+            closeDeleteModal();
+        };
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteModal');
+            if (event.target === modal) {
+                closeDeleteModal();
+            }
+        };
+        
+        // Функции для отображения деталей сотрудника
+        function showEmployeeDetails(employeeIndex) {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            const employee = employees[employeeIndex];
+            
+            if (!employee) return;
+            
+            document.getElementById('employeeDetails').style.display = 'block';
+            document.getElementById('detailsEmployeeName').textContent = employee.name;
+            document.getElementById('detailsAllianceGroup').textContent = `${employee.alliance} - ${employee.group}`;
+            
+            const shiftsList = document.getElementById('shiftsList');
+            shiftsList.innerHTML = '';
+            
+            // Сортируем смены по дате
+            const sortedShifts = [...employee.shifts].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            sortedShifts.forEach((shift, shiftIndex) => {
+                const shiftDiv = document.createElement('div');
+                shiftDiv.className = 'shift-item';
+                
+                const shiftInfo = document.createElement('span');
+                shiftInfo.className = 'shift-info';
+                
+                const date = new Date(shift.date);
+                const weekdays = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+                const weekday = weekdays[date.getDay()];
+                
+                if (shift.startTime === 'Выходной') {
+                    shiftInfo.textContent = `${shift.date} (${weekday}) - Выходной`;
+                } else {
+                    shiftInfo.textContent = `${shift.date} (${weekday}) - ${shift.startTime} - ${shift.endTime || 'не указано'}`;
+                }
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'action-buttons';
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-shift-btn';
+                deleteBtn.textContent = 'Удалить';
+                deleteBtn.onclick = function() {
+                    showDeleteModal(
+                        `Удалить смену ${shift.date}?`,
+                        function() {
+                            deleteShift(employeeIndex, shiftIndex);
+                        }
+                    );
+                };
+                
+                actionsDiv.appendChild(deleteBtn);
+                shiftDiv.appendChild(shiftInfo);
+                shiftDiv.appendChild(actionsDiv);
+                shiftsList.appendChild(shiftDiv);
+            });
+            
+            // Кнопка удаления сотрудника
+            const deleteEmployeeBtn = document.createElement('button');
+            deleteEmployeeBtn.className = 'delete-btn';
+            deleteEmployeeBtn.textContent = 'Удалить сотрудника';
+            deleteEmployeeBtn.style.marginTop = '10px';
+            deleteEmployeeBtn.onclick = function() {
+                showDeleteModal(
+                    `Удалить сотрудника ${employee.name} и все его смены?`,
+                    function() {
+                        deleteEmployee(employeeIndex);
+                    }
+                );
+            };
+            
+            shiftsList.appendChild(deleteEmployeeBtn);
+        }
+        
+        function hideEmployeeDetails() {
+            document.getElementById('employeeDetails').style.display = 'none';
+        }
+        
+        // Функции удаления
+        function deleteShift(employeeIndex, shiftIndex) {
+            let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            if (employees[employeeIndex] && employees[employeeIndex].shifts[shiftIndex]) {
+                employees[employeeIndex].shifts.splice(shiftIndex, 1);
+                
+                // Если у сотрудника не осталось смен, удаляем его
+                if (employees[employeeIndex].shifts.length === 0) {
+                    employees.splice(employeeIndex, 1);
+                    hideEmployeeDetails();
+                }
+                
+                localStorage.setItem('employees', JSON.stringify(employees));
+                
+                // Обновляем отображение
+                updateTable(employees);
+                calculateSummary(employees);
+                
+                // Если детали сотрудника открыты, обновляем их
+                if (document.getElementById('employeeDetails').style.display === 'block') {
+                    if (employees[employeeIndex]) {
+                        showEmployeeDetails(employeeIndex);
+                    }
+                }
+                
+                showError('');
+            }
+        }
+        
+        function deleteEmployee(employeeIndex) {
+            let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            if (employees[employeeIndex]) {
+                employees.splice(employeeIndex, 1);
+                localStorage.setItem('employees', JSON.stringify(employees));
+                
+                hideEmployeeDetails();
+                updateTable(employees);
+                calculateSummary(employees);
+                showError('');
+            }
+        }
+        
+        function updateTable(employees) {
+            console.log('Обновление таблицы графиков...');
+            const tableDiv = document.getElementById('employeesTable');
+            tableDiv.innerHTML = '';
+            
+            if (employees.length > 0) {
+                const grouped = {};
+                employees.forEach((emp, index) => {
+                    if (!grouped[emp.alliance]) grouped[emp.alliance] = {};
+                    if (!grouped[emp.alliance][emp.group]) grouped[emp.alliance][emp.group] = [];
+                    grouped[emp.alliance][emp.group].push({ ...emp, index });
+                });
+                
+                for (const alliance in grouped) {
+                    const allianceTable = document.createElement('table');
+                    allianceTable.innerHTML = `<caption><strong>${alliance}</strong></caption><thead><tr>
+                        <th>Группа</th>
+                        <th>Сотрудник</th>
+                        <th>Смены</th>
+                        <th>Макс. подряд</th>
+                        <th>% в будни</th>
+                        <th>% в выходные</th>
+                        <th>Действия</th>
+                    </tr></thead><tbody></tbody>`;
+                    
+                    for (const group in grouped[alliance]) {
+                        grouped[alliance][group].forEach(emp => {
+                            const metrics = calculateEmployeeMetrics(emp);
+                            const maxConsecutive = calculateMaxConsecutiveShifts(emp);
+                            const consecutiveClass = maxConsecutive > 6 ? 'warning' : '';
+                            
+                            const row = document.createElement('tr');
+                            
+                            const shiftsText = emp.shifts.map(s => 
+                                `${s.date} (${s.startTime}${s.endTime ? '-' + s.endTime : ''})`
+                            ).join('; ');
+                            
+                            // Создаем ячейки в правильном порядке
+                            const cellGroup = document.createElement('td');
+                            cellGroup.textContent = group;
+                            
+                            const cellName = document.createElement('td');
+                            cellName.textContent = emp.name;
+                            
+                            const cellShifts = document.createElement('td');
+                            cellShifts.textContent = shiftsText;
+                            
+                            const cellConsecutive = document.createElement('td');
+                            cellConsecutive.textContent = maxConsecutive;
+                            cellConsecutive.className = consecutiveClass;
+                            
+                            const cellWeekday = document.createElement('td');
+                            cellWeekday.textContent = metrics.weekdayPercentage + '%';
+                            
+                            const cellWeekend = document.createElement('td');
+                            cellWeekend.textContent = metrics.weekendPercentage + '%';
+                            
+                            const cellActions = document.createElement('td');
+                            
+                            const actionsDiv = document.createElement('div');
+                            actionsDiv.className = 'action-buttons';
+                            
+                            const editBtn = document.createElement('button');
+                            editBtn.className = 'edit-btn';
+                            editBtn.textContent = '✏️';
+                            editBtn.title = 'Редактировать';
+                            editBtn.onclick = function() {
+                                showEmployeeDetails(emp.index);
+                            };
+                            
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'delete-btn';
+                            deleteBtn.textContent = '🗑️';
+                            deleteBtn.title = 'Удалить сотрудника';
+                            deleteBtn.onclick = function() {
+                                showDeleteModal(
+                                    `Удалить сотрудника ${emp.name} и все его смены?`,
+                                    function() {
+                                        deleteEmployee(emp.index);
+                                    }
+                                );
+                            };
+                            
+                            actionsDiv.appendChild(editBtn);
+                            actionsDiv.appendChild(deleteBtn);
+                            cellActions.appendChild(actionsDiv);
+                            
+                            // Добавляем все ячейки в строку
+                            row.appendChild(cellGroup);
+                            row.appendChild(cellName);
+                            row.appendChild(cellShifts);
+                            row.appendChild(cellConsecutive);
+                            row.appendChild(cellWeekday);
+                            row.appendChild(cellWeekend);
+                            row.appendChild(cellActions);
+                            
+                            allianceTable.querySelector('tbody').appendChild(row);
+                        });
+                    }
+                    tableDiv.appendChild(allianceTable);
+                }
+            } else {
+                tableDiv.innerHTML = '<p>Нет внесенных графиков.</p>';
+            }
+            console.log('Таблица обновлена.');
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+        }
+        
+        // Добавляем обработчики для проверки последовательных смен
+        document.getElementById('employee').addEventListener('change', updateConsecutiveWarning);
+        document.getElementById('date').addEventListener('change', updateConsecutiveWarning);
+        
+        document.getElementById('scheduleForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const alliance = document.getElementById('alliance').value;
+            const group = document.getElementById('group').value;
+            const employeeName = document.getElementById('employee').value;
+            const date = document.getElementById('date').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            
+            if (!alliance || !group || !employeeName || !date || !startTime) {
+                showError('Заполните все поля!');
+                return;
+            }
+            
+            if (startTime !== 'Выходной' && !endTime) {
+                showError('Выберите время окончания смены!');
+                return;
+            }
+            
+            // Проверка длительности смены
+            if (startTime !== 'Выходной') {
+                const [startHour, startMinute] = startTime.split(':').map(Number);
+                const [endHour, endMinute] = endTime.split(':').map(Number);
+                
+                let startTotalMinutes = startHour * 60 + startMinute;
+                let endTotalMinutes = endHour * 60 + endMinute;
+                
+                if (endHour < 6 && endHour !== 0) {
+                    endTotalMinutes += 24 * 60;
+                }
+                if (endHour === 0 && endMinute === 0 && startHour > 0) {
+                    endTotalMinutes += 24 * 60;
+                }
+                
+                const shiftDuration = endTotalMinutes - startTotalMinutes;
+                
+                if (shiftDuration > 720) {
+                    showError('Длительность смены не может превышать 12 часов!');
+                    return;
+                }
+                
+                if (shiftDuration <= 0) {
+                    showError('Время окончания должно быть позже времени начала!');
+                    return;
+                }
+                
+                if (endHour > 2 && endHour < 6 && !(endHour === 2 && endMinute === 0)) {
+                    showError('Смена не может заканчиваться позже 2:00!');
+                    return;
+                }
+            }
+            
+            const shift = { 
+                date, 
+                startTime, 
+                endTime: startTime === 'Выходной' ? '' : endTime 
+            };
+            
+            let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            let existingEmployee = employees.find(emp => 
+                emp.name === employeeName && 
+                emp.alliance === alliance && 
+                emp.group === group
+            );
+            
+            // Проверка на 6 смен подряд
+            if (existingEmployee) {
+                const consecutiveCheck = checkConsecutiveShifts(existingEmployee, date);
+                if (!consecutiveCheck.canAdd) {
+                    showError(`Невозможно добавить смену: будет ${consecutiveCheck.count} смен подряд! Максимум - 6.`);
+                    return;
+                }
+            }
+            
+            if (existingEmployee) {
+                existingEmployee.shifts.push(shift);
+            } else {
+                employees.push({ 
+                    name: employeeName, 
+                    alliance, 
+                    group, 
+                    shifts: [shift] 
+                });
+            }
+            
+            localStorage.setItem('employees', JSON.stringify(employees));
+            
+            updateTable(employees);
+            calculateSummary(employees);
+            showError('');
+            
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').innerHTML = '<option value="">-- Выберите время --</option>';
+            document.getElementById('endTime').disabled = true;
+            document.getElementById('consecutiveWarning').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
