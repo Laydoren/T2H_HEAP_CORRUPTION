@@ -13,6 +13,7 @@ FOREIGN KEY(`login`) REFERENCES `Users`(`login`)
 );
 CREATE TABLE IF NOT EXISTS `Schedule` (
 	`login` TEXT NOT NULL UNIQUE,
+	'date' TEXT NOT NULL,
 	`time_start` TEXT NOT NULL,
 	`time_end` TEXT NOT NULL,
 FOREIGN KEY(`login`) REFERENCES `Users`(`login`)
