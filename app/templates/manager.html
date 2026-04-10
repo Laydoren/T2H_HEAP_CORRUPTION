@@ -1,0 +1,138 @@
+{% extends "app_shell.html" %}
+{% set active = 'manager' %}
+{% block title %}Руководитель — HR Schedule HUB{% endblock %}
+
+{% block content %}
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="overview">Обзор графиков</button>
+  <button class="tab-btn" data-tab="approvals">Ожидают одобрения</button>
+  <button class="tab-btn" data-tab="requests">Запросы на изменение</button>
+  <button class="tab-btn" data-tab="meetings" id="tab-meetings-btn">Собрания</button>
+</div>
+
+<!-- Tab: Overview -->
+<div class="tab-pane active" id="tab-overview">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Графики сотрудников</h1>
+      <p class="page-sub">Одобренные шаблоны по подразделению</p>
+    </div>
+    <div class="header-actions">
+      <div class="export-range">
+        <input type="date" id="export-from" title="Начало периода"/>
+        <span style="color:var(--muted)">—</span>
+        <input type="date" id="export-to" title="Конец периода"/>
+      </div>
+      <button class="btn-outline" onclick="exportExcel()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Выгрузить Excel
+      </button>
+    </div>
+  </div>
+  <div id="overview-content"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+<!-- Tab: Approvals -->
+<div class="tab-pane hidden" id="tab-approvals">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Ожидают одобрения</h1>
+      <p class="page-sub">Шаблоны, отправленные сотрудниками</p>
+    </div>
+    <button class="btn-ghost btn-sm" onclick="loadPending()">Обновить</button>
+  </div>
+  <div id="approvals-content"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+<!-- Tab: Change Requests -->
+<div class="tab-pane hidden" id="tab-requests">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Запросы на изменение</h1>
+      <p class="page-sub">Запросы от сотрудников на конкретную дату</p>
+    </div>
+    <button class="btn-ghost btn-sm" onclick="loadChangeRequests()">Обновить</button>
+  </div>
+  <div id="requests-content"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+<!-- Tab: Meetings -->
+<div class="tab-pane hidden" id="tab-meetings">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Собрания</h1>
+      <p class="page-sub">Создавайте и управляйте собраниями</p>
+    </div>
+    <button class="btn-primary" onclick="openMeetingModal()">+ Создать собрание</button>
+  </div>
+  <div id="meetings-content"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+<!-- Modal: reject with reason -->
+<div class="modal-overlay hidden" id="reject-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="reject-modal-title">Причина отклонения</h3>
+      <button class="modal-close" onclick="closeModal('reject-modal')">&#x2715;</button>
+    </div>
+    <div id="reject-error" class="alert alert-error hidden"></div>
+    <div class="form-group">
+      <label>Причина <span class="req-star">*</span></label>
+      <textarea id="reject-reason" rows="3" placeholder="Укажите причину…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('reject-modal')">Отмена</button>
+      <button class="btn-danger" onclick="submitReject()">Отклонить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: create meeting -->
+<div class="modal-overlay hidden" id="meeting-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Создать собрание</h3>
+      <button class="modal-close" onclick="closeModal('meeting-modal')">&#x2715;</button>
+    </div>
+    <div id="meeting-error" class="alert alert-error hidden"></div>
+    <div class="form-group">
+      <label>Название <span class="req-star">*</span></label>
+      <input type="text" id="m-title" placeholder="Название собрания"/>
+    </div>
+    <div class="form-group">
+      <label>Описание</label>
+      <textarea id="m-desc" rows="2" placeholder="Необязательно"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Дата <span class="req-star">*</span></label>
+        <input type="date" id="m-date"/>
+      </div>
+      <div class="form-group">
+        <label>Начало</label>
+        <input type="time" id="m-start" value="10:00"/>
+      </div>
+      <div class="form-group">
+        <label>Конец</label>
+        <input type="time" id="m-end" value="11:00"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Участники</label>
+      <p class="form-hint">Оставьте пустым — собрание для всех</p>
+      <div id="participants-list" class="checkbox-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('meeting-modal')">Отмена</button>
+      <button class="btn-primary" onclick="submitMeeting()">Создать</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/manager.js') }}"></script>
+{% endblock %}
