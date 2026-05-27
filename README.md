@@ -16,47 +16,6 @@
 
 ---
 
-## Структура проекта
-
-```
-hackathon-t2/
-│
-├── main.py                        ← точка входа, запуск: python main.py
-├── requirements.txt               ← зависимости: flask, werkzeug, openpyxl
-├── schedule.db                    ← SQLite база (создаётся автоматически)
-│
-└── app/                           ← пакет приложения
-    │
-    ├── __init__.py                ← фабрика create_app(), регистрация Blueprint-ов
-    ├── auth.py                    ← декораторы @login_required, @role_required
-    ├── database.py                ← init_db(), get_db(), log_action(), seed-данные
-    │
-    ├── routes/                    ← маршруты (Blueprint-ы)
-    │   ├── auth_routes.py         ← GET/POST /login, /logout
-    │   ├── schedule_routes.py     ← /, /api/template, /api/schedule, /api/change-requests
-    │   ├── manager_routes.py      ← /manager/*, /manager/api/export-excel
-    │   └── admin_routes.py        ← /admin/*, /admin/api/users, /admin/api/logs
-    │
-    ├── templates/                 ← Jinja2 HTML-шаблоны
-    │   ├── base.html              ← базовый шаблон (подключает CSS)
-    │   ├── app_shell.html         ← шаблон с боковым меню (расширяют все страницы приложения)
-    │   ├── login.html             ← страница входа
-    │   ├── schedule.html          ← личный график сотрудника
-    │   ├── manager.html           ← панель руководителя
-    │   └── admin.html             ← панель администратора
-    │
-    └── static/                    ← статические файлы
-        ├── css/
-        │   ├── style.css          ← глобальные стили, страница входа, модальные окна
-        │   └── app.css            ← стили приложения: sidebar, таблицы, сетка графика
-        └── js/
-            ├── schedule.js        ← логика страницы сотрудника (календарь, шаблон, запросы)
-            ├── manager.js         ← логика панели менеджера (одобрения, собрания, экспорт)
-            └── admin.js           ← логика панели админа (пользователи, расписание, логи)
-```
-
----
-
 ## База данных
 
 ```
