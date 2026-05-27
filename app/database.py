@@ -120,12 +120,8 @@ def _seed_demo_users(conn):
     if exists:
         return
 
-    # тестовые данные для примера
     demo = [
         ('admin',    'admin123',   'Иван',    'Администратов', 'Иванович',   'admin'),
-        ('manager1', 'manager123', 'Мария',   'Руководова',    'Петровна',   'manager'),
-        ('user1',    'user123',    'Алексей', 'Сотрудников',   'Сергеевич',  'employee'),
-        ('user2',    'user123',    'Елена',   'Работова',      'Андреевна',  'employee'),
     ]
 
     for login, password, first_name, last_name, patronymic, role in demo:

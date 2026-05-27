@@ -1,0 +1,185 @@
+{% extends "app_shell.html" %}
+{% set active = 'admin' %}
+{% block title %}Администратор — HR Schedule HUB{% endblock %}
+
+{% block content %}
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="users">Пользователи</button>
+  <button class="tab-btn" data-tab="schedules">Расписания</button>
+  <button class="tab-btn" data-tab="logs">Логи</button>
+</div>
+
+<!-- Tab: Users -->
+<div class="tab-pane active" id="tab-users">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Пользователи</h1>
+      <p class="page-sub">Управление учётными записями</p>
+    </div>
+    <button class="btn-primary" onclick="openCreateUserModal()">+ Добавить</button>
+  </div>
+  <div id="users-content"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+<!-- Tab: Schedules (force override) -->
+<div class="tab-pane hidden" id="tab-schedules">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Расписания</h1>
+      <p class="page-sub">Принудительное изменение расписания сотрудника</p>
+    </div>
+  </div>
+  <div class="form-row" style="max-width:400px;margin-bottom:20px;">
+    <div class="form-group" style="flex:1">
+      <label>Выберите сотрудника</label>
+      <select id="sched-user-select" onchange="loadUserSchedule()">
+        <option value="">— Выберите —</option>
+      </select>
+    </div>
+  </div>
+  <div id="schedule-admin-content"></div>
+</div>
+
+<!-- Tab: Logs -->
+<div class="tab-pane hidden" id="tab-logs">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Журнал действий</h1>
+      <p class="page-sub">Все события системы</p>
+    </div>
+    <button class="btn-ghost btn-sm" onclick="loadLogs()">Обновить</button>
+  </div>
+  <div id="logs-content"><p class="muted-text">Загрузка…</p></div>
+</div>
+
+
+<!-- Modal: create user -->
+<div class="modal-overlay hidden" id="create-user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Добавить пользователя</h3>
+      <button class="modal-close" onclick="closeModal('create-user-modal')">&#x2715;</button>
+    </div>
+    <div id="cu-error" class="alert alert-error hidden"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Фамилия <span class="req-star">*</span></label>
+        <input type="text" id="cu-last"/>
+      </div>
+      <div class="form-group">
+        <label>Имя <span class="req-star">*</span></label>
+        <input type="text" id="cu-first"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Отчество</label>
+      <input type="text" id="cu-patronymic"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Логин <span class="req-star">*</span></label>
+        <input type="text" id="cu-login"/>
+      </div>
+      <div class="form-group">
+        <label>Пароль <span class="req-star">*</span></label>
+        <input type="password" id="cu-password"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Роль</label>
+      <select id="cu-role">
+        <option value="employee">Сотрудник</option>
+        <option value="manager">Менеджер</option>
+        <option value="admin">Администратор</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('create-user-modal')">Отмена</button>
+      <button class="btn-primary" onclick="createUser()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: change role -->
+<div class="modal-overlay hidden" id="role-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Изменить роль</h3>
+      <button class="modal-close" onclick="closeModal('role-modal')">&#x2715;</button>
+    </div>
+    <p id="role-modal-user" class="modal-hint"></p>
+    <div class="form-group">
+      <label>Новая роль</label>
+      <select id="role-select">
+        <option value="employee">Сотрудник</option>
+        <option value="manager">Менеджер</option>
+        <option value="admin">Администратор</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('role-modal')">Отмена</button>
+      <button class="btn-primary" onclick="submitRoleChange()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: force override -->
+<div class="modal-overlay hidden" id="override-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Принудительное изменение</h3>
+      <button class="modal-close" onclick="closeModal('override-modal')">&#x2715;</button>
+    </div>
+    <div id="ov-error" class="alert alert-error hidden"></div>
+    <p id="ov-user" class="modal-hint"></p>
+    <div class="form-group">
+      <label>Дата</label>
+      <input type="date" id="ov-date"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Начало</label>
+        <input type="time" id="ov-start" value="09:00"/>
+      </div>
+      <div class="form-group">
+        <label>Конец</label>
+        <input type="time" id="ov-end" value="18:00"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Примечание</label>
+      <input type="text" id="ov-note" placeholder="Необязательно"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('override-modal')">Отмена</button>
+      <button class="btn-primary" onclick="submitOverride()">Применить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: reset password -->
+<div class="modal-overlay hidden" id="pw-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Сброс пароля</h3>
+      <button class="modal-close" onclick="closeModal('pw-modal')">&#x2715;</button>
+    </div>
+    <div id="pw-error" class="alert alert-error hidden"></div>
+    <p id="pw-user" class="modal-hint"></p>
+    <div class="form-group">
+      <label>Новый пароль</label>
+      <input type="password" id="pw-new" placeholder="Минимум 4 символа"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('pw-modal')">Отмена</button>
+      <button class="btn-primary" onclick="submitPasswordReset()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
